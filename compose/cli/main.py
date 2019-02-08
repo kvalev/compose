@@ -1005,7 +1005,7 @@ class TopLevelCommand(object):
         If you want to force Compose to stop and recreate all containers, use the
         `--force-recreate` flag.
 
-        Usage: up [options] [--scale SERVICE=NUM...] [SERVICE...]
+        Usage: up [options] [--scale SERVICE=NUM...] [--volumes-from CONTAINER...] [SERVICE...]
 
         Options:
             -d, --detach               Detached mode: Run containers in the background,
@@ -1030,6 +1030,7 @@ class TopLevelCommand(object):
                                        already running. (default: 10)
             -V, --renew-anon-volumes   Recreate anonymous volumes instead of retrieving
                                        data from the previous containers.
+            --volumes-from=[]          Mount volumes from given source (default [])
             --remove-orphans           Remove containers for services not defined
                                        in the Compose file.
             --exit-code-from SERVICE   Return the exit code of the selected service
@@ -1046,6 +1047,7 @@ class TopLevelCommand(object):
         remove_orphans = options['--remove-orphans']
         detached = options.get('--detach')
         no_start = options.get('--no-start')
+        volumes_from = options.get('--volumes-from')
 
         if detached and (cascade_stop or exit_value_from):
             raise UserError("--abort-on-container-exit and -d cannot be combined.")
@@ -1078,6 +1080,7 @@ class TopLevelCommand(object):
                     always_recreate_deps=always_recreate_deps,
                     reset_container_image=rebuild,
                     renew_anonymous_volumes=options.get('--renew-anon-volumes'),
+                    volumes_from=volumes_from,
                     silent=options.get('--quiet-pull'),
                 )
 

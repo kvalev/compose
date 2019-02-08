@@ -17,6 +17,7 @@ from .config import ConfigurationError
 from .config.config import V1
 from .config.sort_services import get_container_name_from_network_mode
 from .config.sort_services import get_service_name_from_network_mode
+from .config.types import VolumeFromSpec
 from .const import LABEL_ONE_OFF
 from .const import LABEL_PROJECT
 from .const import LABEL_SERVICE
@@ -509,6 +510,7 @@ class Project(object):
            always_recreate_deps=False,
            reset_container_image=False,
            renew_anonymous_volumes=False,
+           volumes_from=[],
            silent=False,
            ):
 
@@ -524,7 +526,22 @@ class Project(object):
             include_deps=start_deps)
 
         for svc in services:
+            for vf in volumes_from:
+                # the first parameter is the service names, but it is unused in v2
+                # vf example:
+                #   - NAME (implies a docker-compose service)
+                #   - container:NAME (default rw)
+                #   - container:NAME:ro
+                spec = VolumeFromSpec.parse_v2([], vf)
+                if spec.type == 'service':
+                    spec = spec._replace(source=self.get_service(spec.source))
+                elif spec.type == 'container':
+                    container = Container.from_id(self.client, spec.source)
+                    spec = spec._replace(source=container)
+                svc.volumes_from.append(spec)
+
             svc.ensure_image_exists(do_build=do_build, silent=silent)
+
         plans = self._get_convergence_plans(
             services, strategy, always_recreate_deps=always_recreate_deps)
 
